@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mssql
+  namespace: babyduck-db
+  labels:
+    {{- include "vars.labels" . | nindent 4 }}
+spec:
+  serviceName: mssql
+  selector:
+    matchLabels:
+      {{- include "vars.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vars.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: mssql-app
+          image: 'mcr.microsoft.com/mssql/server:2022-CU15-GDR1-ubuntu-22.04'
+          ports:
+            - containerPort: 1433
+              name: tcpsql
+          envFrom:
+            - secretRef:
+                name: mssql-env
+          volumeMounts:
+            - name: mssql-pvc
+              mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+    - metadata:
+        name: mssql-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 8Gi
